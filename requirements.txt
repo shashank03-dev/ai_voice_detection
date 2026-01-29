@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+gunicorn
+librosa
+torch
+transformers
+python-multipart
+soundfile
+requests
+numpy
+scipy
+pyngrok

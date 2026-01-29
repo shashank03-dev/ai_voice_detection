@@ -8,14 +8,17 @@ from transformers import pipeline
 
 import os
 
+# ... imports remain same ...
+
 # Ensemble Configuration
-# On Render Free Tier (512MB RAM), we only load one model to avoid OOM crashes.
+import os
 IS_LITE = os.getenv("RENDER", "false").lower() == "true"
 
 if IS_LITE:
-    print("Running in LITE mode (Render optimization)...")
+    # Use a single model for Lite mode
+    # mo-thecreator might be slightly lighter or just safer baseline
     MODELS = [
-        {"name": "MelodyMachine/Deepfake-audio-detection-V2", "weight": 1.0}
+       {"name": "mo-thecreator/Deepfake-audio-detection", "weight": 1.0}
     ]
 else:
     MODELS = [
@@ -24,20 +27,26 @@ else:
         {"name": "Hemgg/Deepfake-audio-detection", "weight": 1.0}
     ]
 
-pipelines = []
+_pipelines = None
 
-print("Initializing Ensemble Models...")
-for m in MODELS:
-    try:
-        print(f"Loading {m['name']}...")
-        p = pipeline("audio-classification", model=m['name'])
-        pipelines.append({"pipe": p, "weight": m['weight'], "name": m['name']})
-        print(f"Loaded {m['name']}")
-    except Exception as e:
-        print(f"Failed to load {m['name']}: {e}")
+def get_pipelines():
+    global _pipelines
+    if _pipelines is None:
+        print(f"Initializing models (Lite Mode: {IS_LITE})...")
+        _pipelines = []
+        for m in MODELS:
+            try:
+                print(f"Loading {m['name']}...")
+                # Optimized for CPU usage if possible
+                p = pipeline("audio-classification", model=m['name']) 
+                _pipelines.append({"pipe": p, "weight": m['weight'], "name": m['name']})
+                print(f"Loaded {m['name']}")
+            except Exception as e:
+                print(f"Failed to load {m['name']}: {e}")
+    return _pipelines
 
 def decode_audio(base64_string: str):
-    """
+# ... rest of file    """
     Decodes a base64 string into audio bytes.
     """
     try:
@@ -88,6 +97,7 @@ def detect_voice(base64_audio: str):
     Analyzes the audio and returns classification, confidence, and explanation.
     """
     try:
+        pipelines = get_pipelines()
         if not pipelines:
             return {
                 "classification": "HUMAN",

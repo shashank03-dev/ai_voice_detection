@@ -46,7 +46,7 @@ def get_pipelines():
     return _pipelines
 
 def decode_audio(base64_string: str):
-# ... rest of file    """
+    """
     Decodes a base64 string into audio bytes.
     """
     try:
